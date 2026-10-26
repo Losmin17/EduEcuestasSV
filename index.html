@@ -12,8 +12,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<!-- QRCodeJS sin dependencias de backend -->
+<!-- QRCodeJS con fallback a versión confiable -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  if (typeof QRCode === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script>');
+  }
+</script>
 <!-- Canvas Confetti -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <!-- Supabase Realtime para sincronizar 16+ dispositivos en vivo -->
@@ -2020,18 +2025,39 @@ function renderQR() {
   const base = window.location.href.split('#')[0].split('?')[0];
   const url = `${base}?p=${currentIdx + 1}#votar`;
   
-  document.getElementById("urlDisplay").textContent = url.replace(/^https?:\/\//, '');
+  const urlEl = document.getElementById("urlDisplay");
+  if (urlEl) {
+    urlEl.textContent = url.replace(/^https?:\/\//, '');
+  }
 
   const box = document.getElementById("qrcode");
+  if (!box) return;
   box.innerHTML = "";
-  qrInstance = new QRCode(box, {
-    text: url,
-    width: 156,
-    height: 156,
-    colorDark: "#0f172a",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.M
-  });
+
+  if (typeof QRCode !== 'undefined') {
+    try {
+      qrInstance = new QRCode(box, {
+        text: url,
+        width: 156,
+        height: 156,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: (QRCode.CorrectLevel && QRCode.CorrectLevel.M !== undefined) ? QRCode.CorrectLevel.M : 0
+      });
+      return;
+    } catch(err) {
+      console.warn("Fallo QRCode local, usando fallback svg:", err);
+    }
+  }
+
+  // Fallback 100% garantizado: Generador de QR SVG estándar de alta resolución
+  const qrImg = document.createElement("img");
+  qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=156x156&data=${encodeURIComponent(url)}&color=0f172a&bgcolor=ffffff&qzone=1`;
+  qrImg.alt = "Código QR para votar";
+  qrImg.style.width = "156px";
+  qrImg.style.height = "156px";
+  qrImg.style.display = "block";
+  box.appendChild(qrImg);
 }
 
 function copyShareUrl() {
