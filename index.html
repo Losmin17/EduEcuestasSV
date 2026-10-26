@@ -1283,16 +1283,6 @@ body {
       </div>
 
       <div class="header-actions">
-        <a href="admin.html" target="_blank" class="btn-admin-link" id="headerAdminMandoBtn" style="display: none;" title="Abrir panel de control remoto exclusivo">
-          <i class="fas fa-sliders-h"></i>
-          <span>Mando</span>
-        </a>
-
-        <button class="btn-auth-access" id="headerAuthBtn" onclick="handleHeaderAuthClick()" title="Acceso Expositor (Supabase)">
-          <i class="fas fa-lock" id="headerAuthIcon"></i>
-          <span id="headerAuthText">Expositor</span>
-        </button>
-
         <div class="live-pill">
           <span class="live-dot"></span>
           EN VIVO
@@ -1346,23 +1336,6 @@ body {
       <div class="counter-stat">
         <div class="lbl">Total de Votos<br>en esta pregunta:</div>
         <div class="val" id="totalVotesCount">0</div>
-      </div>
-
-      <div class="control-actions-stack" id="projectorAdminControls" style="display: none;">
-        <button class="btn-control btn-reveal" id="btnRevealAnswer" onclick="toggleCorrectAnswer()">
-          <i class="fas fa-check-circle"></i>
-          <span id="revealBtnText">Mostrar Respuesta Correcta</span>
-        </button>
-
-        <button class="btn-control btn-reset" onclick="resetCurrentVote()">
-          <i class="fas fa-rotate-left"></i>
-          <span>Reiniciar Esta Pregunta</span>
-        </button>
-
-        <button class="btn-control btn-reset-all" onclick="resetAllSurvey()">
-          <i class="fas fa-trash-can"></i>
-          <span>Reiniciar Toda la Encuesta</span>
-        </button>
       </div>
     </div>
 
@@ -1419,34 +1392,6 @@ body {
       <button class="edu-modal-btn edu-modal-cancel" onclick="closeConfirmModal()">Cancelar</button>
       <button class="edu-modal-btn edu-modal-confirm" id="confirmModalActionBtn">Confirmar</button>
     </div>
-  </div>
-</div>
-
-<!-- Modal de Acceso Exclusivo del Expositor (Supabase Auth) -->
-<div class="edu-modal-overlay" id="authLoginModal" onclick="if(event.target===this) closeAuthLoginModal()">
-  <div class="edu-modal-box">
-    <div class="edu-modal-icon" style="background-color: var(--mission-active-bg); border-color: var(--celeste-sv); color: var(--celeste-sv);">
-      <i class="fas fa-user-shield"></i>
-    </div>
-    <h3 class="edu-modal-title">Acceso del Expositor</h3>
-    <p class="edu-modal-msg" style="margin-bottom: 16px;">Inicia sesión con tu cuenta de administrador de EduContaSV para habilitar el Mando y los controles.</p>
-
-    <div class="edu-auth-error" id="authLoginError"></div>
-
-    <form onsubmit="submitAdminLogin(event)">
-      <div class="edu-auth-input-group">
-        <label class="edu-auth-label">Correo Administrador</label>
-        <input type="email" class="edu-auth-input" id="authAdminEmail" placeholder="tucorreo@gmail.com" required>
-      </div>
-      <div class="edu-auth-input-group" style="margin-bottom: 20px;">
-        <label class="edu-auth-label">Contraseña</label>
-        <input type="password" class="edu-auth-input" id="authAdminPassword" placeholder="••••••••" required>
-      </div>
-      <div class="edu-modal-actions">
-        <button type="button" class="edu-modal-btn edu-modal-cancel" onclick="closeAuthLoginModal()">Cancelar</button>
-        <button type="submit" class="edu-modal-btn edu-modal-confirm" id="authSubmitBtn" style="background-color: var(--celeste-sv); border-color: var(--celeste-sv); box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);">Ingresar</button>
-      </div>
-    </form>
   </div>
 </div>
 
@@ -1586,115 +1531,11 @@ if (!myVoterId) {
   try { localStorage.setItem("eduencuestas_voter_id", myVoterId); } catch(e) {}
 }
 
-// Conexión en Tiempo Real Multidispositivo y Autenticación (Supabase de EduContaSV.v2)
+// Conexión en Tiempo Real Multidispositivo (Supabase Realtime de EduContaSV.v2)
 const SUPABASE_URL = 'https://opteohbpsbrjnblexkqo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wdGVvaGJwc2Jyam5ibGV4a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzM0NDEsImV4cCI6MjA4ODI0OTQ0MX0.tkUB4Wxul4IlS0eJTF9puWHNShIT9STMKaCwIkIIaws';
-const ADMIN_EMAIL = 'lopezosmin2021@gmail.com';
 let supabaseApp = null;
 let liveChannel = null;
-let isAdminAuthenticated = false;
-
-function updateAdminUIVisibility() {
-  const mandoBtn = document.getElementById("headerAdminMandoBtn");
-  const authBtn = document.getElementById("headerAuthBtn");
-  const authIcon = document.getElementById("headerAuthIcon");
-  const authText = document.getElementById("headerAuthText");
-  const projControls = document.getElementById("projectorAdminControls");
-
-  if (isAdminAuthenticated) {
-    if (mandoBtn) mandoBtn.style.display = "inline-flex";
-    if (projControls) projControls.style.display = "flex";
-    if (authBtn) {
-      authBtn.classList.add("is-logged-admin");
-      authBtn.title = "Sesión de Expositor activa (Clic para cerrar sesión)";
-    }
-    if (authIcon) authIcon.className = "fas fa-user-check";
-    if (authText) authText.textContent = "Admin Activo";
-  } else {
-    if (mandoBtn) mandoBtn.style.display = "none";
-    if (projControls) projControls.style.display = "none";
-    if (authBtn) {
-      authBtn.classList.remove("is-logged-admin");
-      authBtn.title = "Iniciar sesión como Expositor";
-    }
-    if (authIcon) authIcon.className = "fas fa-lock";
-    if (authText) authText.textContent = "Expositor";
-  }
-}
-
-async function checkAdminSession() {
-  if (!supabaseApp) return;
-  try {
-    const { data } = await supabaseApp.auth.getSession();
-    const session = data?.session;
-    isAdminAuthenticated = !!(session && session.user && session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-    updateAdminUIVisibility();
-  } catch (e) {
-    isAdminAuthenticated = false;
-    updateAdminUIVisibility();
-  }
-}
-
-function handleHeaderAuthClick() {
-  if (isAdminAuthenticated) {
-    openConfirmModal(
-      "Cerrar Sesión de Expositor",
-      "¿Deseas cerrar tu sesión de administrador en este navegador? El botón Mando y los controles volverán a ocultarse al público.",
-      async () => {
-        if (supabaseApp) await supabaseApp.auth.signOut();
-        isAdminAuthenticated = false;
-        updateAdminUIVisibility();
-        showToast("Sesión de expositor cerrada");
-      }
-    );
-  } else {
-    document.getElementById("authLoginError").style.display = "none";
-    document.getElementById("authAdminEmail").value = "";
-    document.getElementById("authAdminPassword").value = "";
-    document.getElementById("authLoginModal").classList.add("open");
-  }
-}
-
-function closeAuthLoginModal() {
-  document.getElementById("authLoginModal").classList.remove("open");
-}
-
-async function submitAdminLogin(e) {
-  e.preventDefault();
-  if (!supabaseApp) return;
-
-  const email = document.getElementById("authAdminEmail").value.trim();
-  const password = document.getElementById("authAdminPassword").value;
-  const errBox = document.getElementById("authLoginError");
-  const btn = document.getElementById("authSubmitBtn");
-
-  errBox.style.display = "none";
-  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-    errBox.textContent = "Acceso denegado: este correo no tiene permisos de Expositor.";
-    errBox.style.display = "block";
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = "Verificando...";
-
-  try {
-    const { data, error } = await supabaseApp.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    if (data?.session?.user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      isAdminAuthenticated = true;
-      updateAdminUIVisibility();
-      closeAuthLoginModal();
-      showToast("✓ Modo Expositor desbloqueado");
-    }
-  } catch (err) {
-    errBox.textContent = "Credenciales incorrectas. Verifica tu correo y contraseña.";
-    errBox.style.display = "block";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Ingresar";
-  }
-}
 
 function rebuildVotesFromRegistry() {
   questions.forEach(q => {
@@ -1726,12 +1567,6 @@ function initRealtimeSync() {
   if (!window.supabase) return;
   try {
     supabaseApp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    checkAdminSession();
-
-    supabaseApp.auth.onAuthStateChange((_event, session) => {
-      isAdminAuthenticated = !!(session && session.user && session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-      updateAdminUIVisibility();
-    });
 
     liveChannel = supabaseApp.channel('eduencuestas_live_room_v2', {
       config: { broadcast: { self: false } }
@@ -2032,29 +1867,9 @@ function isMissionCompleted(idx) {
 }
 
 function selectTab(idx) {
-  if (!isAdminAuthenticated) {
-    showToast("Solo el expositor puede cambiar la pregunta activa");
-    return;
-  }
-  if (idx === currentIdx) return;
-
-  const prevIdx = currentIdx;
-  const direction = idx > prevIdx ? "next" : "prev";
-
-  const prevQ = questions[prevIdx];
-  const prevVotes = prevQ.options.reduce((a, b) => a + b.votes, 0);
-  if (prevVotes > 0 || revealState[prevQ.id]) {
-    completedQuestions[prevQ.id] = true;
-  }
-
-  currentIdx = idx;
-  saveVotes();
-  broadcastAdminState();
-  renderMissionRoadmap();
-  renderProjector();
-  renderPhone();
-  renderQR();
-  triggerCardSlideAnimation(direction);
+  // El cambio de pregunta se gestiona exclusivamente desde admin.html (Mando Expositor)
+  showToast("La pregunta activa es controlada desde el Mando del Expositor");
+  return;
 }
 
 function renderProjector() {
@@ -2198,94 +2013,6 @@ function castVote(optId) {
   } else {
     showToast(`¡Voto registrado por la opción ${optId}!`);
   }
-}
-
-function toggleCorrectAnswer() {
-  const q = questions[currentIdx];
-  revealState[q.id] = !revealState[q.id];
-
-  if (revealState[q.id]) {
-    completedQuestions[q.id] = true;
-  }
-
-  saveVotes();
-  broadcastAdminState();
-  renderProjector();
-  renderPhone();
-  renderMissionRoadmap();
-
-  if (revealState[q.id]) {
-    triggerCardCompleteGlow();
-    showToast(`✓ Misión Cumplida · Respuesta correcta (Opción ${q.correctAnswer})`);
-    // Disparar confeti aquí únicamente si el usuario actual acertó la respuesta correcta
-    if (userVotes[q.id] && userVotes[q.id] === q.correctAnswer) {
-      fireSuccessConfetti();
-    }
-  } else {
-    showToast("Respuesta correcta ocultada");
-  }
-}
-
-function openConfirmModal(title, msg, onConfirmCallback) {
-  document.getElementById("confirmModalTitle").textContent = title;
-  document.getElementById("confirmModalMsg").textContent = msg;
-  const btn = document.getElementById("confirmModalActionBtn");
-  btn.onclick = () => {
-    closeConfirmModal();
-    onConfirmCallback();
-  };
-  document.getElementById("confirmModal").classList.add("open");
-}
-
-function closeConfirmModal() {
-  document.getElementById("confirmModal").classList.remove("open");
-}
-
-function resetCurrentVote() {
-  openConfirmModal(
-    "Reiniciar Esta Pregunta",
-    `¿Seguro que deseas reiniciar los votos de la Pregunta ${currentIdx + 1} a cero?`,
-    () => {
-      const q = questions[currentIdx];
-      q.options.forEach(o => o.votes = 0);
-      delete userVotes[q.id];
-      delete revealState[q.id];
-      delete completedQuestions[q.id];
-      delete voterRegistry[q.id];
-      saveVotes();
-      broadcastAdminState({ resetQuestionId: q.id });
-
-      renderProjector();
-      renderPhone();
-      renderMissionRoadmap();
-      showToast(`Pregunta ${currentIdx + 1} reiniciada a 0`);
-    }
-  );
-}
-
-function resetAllSurvey() {
-  openConfirmModal(
-    "Reiniciar Toda la Encuesta",
-    "¿Seguro que deseas reiniciar TODAS las 8 preguntas, borrar todos los votos y reiniciar el mapa de misiones?",
-    () => {
-      questions.forEach(q => {
-        q.options.forEach(o => o.votes = 0);
-      });
-      userVotes = {};
-      voterRegistry = {};
-      revealState = {};
-      completedQuestions = {};
-      currentIdx = 0;
-      saveVotes();
-      broadcastAdminState({ resetAll: true });
-
-      renderProjector();
-      renderPhone();
-      renderMissionRoadmap();
-      renderQR();
-      showToast("✓ Toda la encuesta ha sido reiniciada por completo");
-    }
-  );
 }
 
 let qrInstance = null;
