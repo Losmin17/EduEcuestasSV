@@ -1882,23 +1882,31 @@ function renderProjector() {
   const total = q.options.reduce((a, b) => a + b.votes, 0);
   const isRevealed = !!revealState[q.id];
 
-  document.getElementById("speakerLabel").innerHTML = `<i class="fas fa-user-tie"></i> ${q.speaker}`;
-  document.getElementById("questionTitle").textContent = q.title;
-  document.getElementById("questionContext").textContent = q.context;
-  document.getElementById("totalVotesCount").textContent = total;
-  document.getElementById("didacticSummary").textContent = q.didactic;
+  const speakerEl = document.getElementById("speakerLabel");
+  if (speakerEl) speakerEl.innerHTML = `<i class="fas fa-user-tie"></i> ${q.speaker}`;
+  const titleEl = document.getElementById("questionTitle");
+  if (titleEl) titleEl.textContent = q.title;
+  const ctxEl = document.getElementById("questionContext");
+  if (ctxEl) ctxEl.textContent = q.context;
+  const countEl = document.getElementById("totalVotesCount");
+  if (countEl) countEl.textContent = total;
+  const didacEl = document.getElementById("didacticSummary");
+  if (didacEl) didacEl.textContent = q.didactic;
 
   const btnRev = document.getElementById("btnRevealAnswer");
   const txtRev = document.getElementById("revealBtnText");
-  if (isRevealed) {
-    btnRev.classList.add("active");
-    txtRev.textContent = "Ocultar Respuesta Correcta";
-  } else {
-    btnRev.classList.remove("active");
-    txtRev.textContent = "Mostrar Respuesta Correcta";
+  if (btnRev && txtRev) {
+    if (isRevealed) {
+      btnRev.classList.add("active");
+      txtRev.textContent = "Ocultar Respuesta Correcta";
+    } else {
+      btnRev.classList.remove("active");
+      txtRev.textContent = "Mostrar Respuesta Correcta";
+    }
   }
 
   const container = document.getElementById("optionsContainer");
+  if (!container) return;
   container.innerHTML = "";
 
   q.options.forEach(opt => {
