@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EduEncuestas | Panel de Control del Expositor</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='36' fill='%230f172a'/%3E%3Crect x='22' y='58' width='13' height='20' rx='1' fill='%231e293b'/%3E%3Crect x='40' y='42' width='13' height='36' rx='1' fill='%23334155'/%3E%3Crect x='58' y='22' width='13' height='56' rx='1' fill='%230ea5e9'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root {
+  --azul-corporativo: #0f172a;
+  --celeste-sv: #0ea5e9;
+  --celeste-light: #38bdf8;
+  --bg-light: #f1f5f9;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --pill-bg: #f8fafc;
+  --header-bg: #ffffff;
+  --header-border: #e2e8f0;
+}
+html.dark {
+  --azul-corporativo: #f1f5f9;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --card-bg: #0f172a;
+  --card-border: #1e293b;
+  --pill-bg: #1e293b;
+  --header-bg: #0f172a;
+  --header-border: #1e293b;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+html.dark body { background-color: #070c18; }
+
+.header {
+  height: 62px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 800;
+}
+.badge-admin {
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  color: var(--celeste-sv);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.wrap {
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Tarjetas */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+}
+
+@keyframes cardSlideFromRight {
+  0% { opacity: 0; transform: translateX(48px) scale(0.985); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes cardSlideFromLeft {
+  0% { opacity: 0; transform: translateX(-48px) scale(0.985); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.card-slide-next {
+  animation: cardSlideFromRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.card-slide-prev {
+  animation: cardSlideFromLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Botón gigante de estado de la pregunta */
+.nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.btn-nav {
+  background: var(--pill-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 10px 18px;
+  border-radius: 36px;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+.btn-nav:hover {
+  background: var(--celeste-sv);
+  color: #fff;
+  border-color: var(--celeste-sv);
+}
+
+.q-select-dropdown {
+  width: 100%;
+  background: var(--pill-bg);
+  border: 1.5px solid var(--card-border);
+  color: var(--text-main);
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+.q-select-dropdown:focus {
+  border-color: var(--celeste-sv);
+}
+
+/* Indicador de votos grande */
+.stats-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 16px;
+  padding: 12px 18px;
+  margin: 12px 0;
+}
+.stats-banner .lbl {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.stats-banner .num {
+  font-size: 28px;
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  color: var(--celeste-sv);
+}
+
+/* Botones principales de acción */
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.btn-action {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.btn-action i {
+  font-size: 20px;
+}
+.btn-action:active {
+  transform: scale(0.97);
+}
+
+.btn-reveal-main {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+.btn-reveal-main.is-showing {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.btn-reset-main {
+  background: rgba(244, 63, 94, 0.12);
+  border: 1.5px solid rgba(244, 63, 94, 0.35);
+  color: #f43f5e;
+}
+.btn-reset-main:hover {
+  background: #f43f5e;
+  color: #fff;
+}
+
+.btn-celebrate {
+  grid-column: span 2;
+  background: var(--pill-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 11px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.btn-celebrate:hover {
+  border-color: var(--celeste-sv);
+  color: var(--celeste-sv);
+}
+
+.btn-reset-all {
+  grid-column: span 2;
+  background-color: var(--pill-bg);
+  border: 1.5px dashed #f43f5e;
+  color: #f43f5e;
+  padding: 11px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.btn-reset-all:hover {
+  background-color: #f43f5e;
+  color: #ffffff;
+  border-style: solid;
+}
+
+/* Modal de Confirmación Personalizado Estilo EduContaSV.v2 Sólido */
+.edu-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(7, 12, 24, 0.72);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.edu-modal-overlay.open {
+  display: flex;
+}
+.edu-modal-box {
+  background-color: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 28px;
+  max-width: 400px;
+  width: 100%;
+  padding: 26px 24px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: modalSpring 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+@keyframes modalSpring {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.edu-modal-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: rgba(244, 63, 94, 0.12);
+  border: 2px solid #f43f5e;
+  color: #f43f5e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin: 0 auto 14px;
+}
+.edu-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+.edu-modal-msg {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 22px;
+}
+.edu-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.edu-modal-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 36px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.edu-modal-cancel {
+  background-color: var(--pill-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+}
+.edu-modal-cancel:hover {
+  border-color: var(--text-muted);
+}
+.edu-modal-confirm {
+  background-color: #f43f5e;
+  border: 1px solid #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(244, 63, 94, 0.3);
+}
+.edu-modal-confirm:hover {
+  background-color: #e11d48;
+}
+
+/* Pantalla de Bloqueo de Seguridad en admin.html */
+.admin-auth-gate {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg-light);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+html.dark .admin-auth-gate {
+  background-color: #070c18;
+}
+.admin-auth-gate.unlocked {
+  display: none;
+}
+.edu-auth-input-group {
+  text-align: left;
+  margin-bottom: 14px;
+}
+.edu-auth-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  padding-left: 4px;
+}
+.edu-auth-input {
+  width: 100%;
+  background-color: var(--pill-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 36px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.edu-auth-input:focus {
+  border-color: var(--celeste-sv);
+}
+.edu-auth-error {
+  display: none;
+  background-color: rgba(244, 63, 94, 0.12);
+  border: 1px solid #f43f5e;
+  color: #f43f5e;
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+/* Lista de opciones con votos en vivo */
+.options-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.opt-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--pill-bg);
+  border: 1px solid var(--card-border);
+  font-size: 13px;
+}
+.opt-summary-row.is-correct {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  font-weight: 700;
+}
+
+/* Enlace a proyector */
+.open-proyector-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-radius: 18px;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  text-decoration: none;
+  color: var(--celeste-sv);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Toast */
+.toast-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #0f172a;
+  border: 1px solid var(--celeste-sv);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 100;
+  white-space: nowrap;
+}
+.toast-bar.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
+      <rect x="10" y="78" width="80" height="5" rx="1" fill="#0f172a" />
+      <rect x="22" y="58" width="13" height="20" rx="1" fill="#1e293b" />
+      <rect x="40" y="42" width="13" height="36" rx="1" fill="#334155" />
+      <rect x="58" y="22" width="13" height="56" rx="1" fill="#0ea5e9" />
+    </svg>
+    <span>EduEncuestas</span>
+    <span class="badge-admin">Mando Expositor</span>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:10px;">
+    <button id="btnAdminLogout" onclick="logoutAdmin()" style="display:none; background:rgba(244,63,94,0.12); border:1px solid #f43f5e; color:#f43f5e; padding:5px 12px; border-radius:36px; font-size:11.5px; font-weight:800; cursor:pointer; font-family:inherit;">
+      <i class="fas fa-sign-out-alt"></i> Salir
+    </button>
+    <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;">
+      <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+  </div>
+</header>
+
+<!-- Pantalla de Bloqueo de Seguridad (Supabase Auth) -->
+<div class="admin-auth-gate" id="adminAuthGate">
+  <div class="edu-modal-box">
+    <div class="edu-modal-icon" style="background-color: rgba(14, 165, 233, 0.12); border-color: var(--celeste-sv); color: var(--celeste-sv);">
+      <i class="fas fa-user-shield"></i>
+    </div>
+    <h3 class="edu-modal-title">Mando Exclusivo del Expositor</h3>
+    <p class="edu-modal-msg" style="margin-bottom: 16px;">Ingresa con tu cuenta de administrador de EduContaSV para desbloquear el panel de control remoto.</p>
+
+    <div class="edu-auth-error" id="adminGateError"></div>
+
+    <form onsubmit="submitGateLogin(event)">
+      <div class="edu-auth-input-group">
+        <label class="edu-auth-label">Correo Administrador</label>
+        <input type="email" class="edu-auth-input" id="gateEmail" placeholder="tucorreo@gmail.com" required>
+      </div>
+      <div class="edu-auth-input-group" style="margin-bottom: 20px;">
+        <label class="edu-auth-label">Contraseña</label>
+        <input type="password" class="edu-auth-input" id="gatePassword" placeholder="••••••••" required>
+      </div>
+      <div class="edu-modal-actions">
+        <a href="index.html" class="edu-modal-btn edu-modal-cancel" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">Ir a Encuesta</a>
+        <button type="submit" class="edu-modal-btn edu-modal-confirm" id="gateSubmitBtn" style="background-color: var(--celeste-sv); border-color: var(--celeste-sv); box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);">Desbloquear</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<main class="wrap" id="adminMainContent" style="display: none;">
+
+  <!-- Enlace para abrir pantalla proyector -->
+  <a href="index.html" target="_blank" class="open-proyector-card">
+    <span><i class="fas fa-desktop mr-1"></i> Abrir Pantalla Proyector / Audiencia</span>
+    <i class="fas fa-external-link-alt"></i>
+  </a>
+
+  <!-- Tarjeta de Control de Pregunta -->
+  <div class="card">
+    <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--celeste-sv); margin-bottom:6px;" id="speakerTag">
+      INTEGRANTE 1 · SECCIÓN 01
+    </div>
+
+    <!-- Selector de Pregunta Rápido -->
+    <select class="q-select-dropdown" id="questionSelect" onchange="changeQuestion(this.value)">
+      <!-- Llenado con JS -->
+    </select>
+
+    <div class="nav-row" style="margin-top: 12px;">
+      <button class="btn-nav" onclick="prevQuestion()">
+        <i class="fas fa-arrow-left"></i> Anterior
+      </button>
+      <span style="font-weight: 800; font-size: 13px;" id="qIndexLabel">Pregunta 1 de 8</span>
+      <button class="btn-nav" onclick="nextQuestion()">
+        Siguiente <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <div class="stats-banner">
+      <div>
+        <div class="lbl">Votos registrados en vivo:</div>
+        <div style="font-size:12px; font-weight:700; color:var(--text-main);" id="winnerInfo">Esperando votos...</div>
+      </div>
+      <div class="num" id="totalVotes">0</div>
+    </div>
+
+    <!-- Botones Clave: Respuesta Correcta y Reiniciar -->
+    <div class="action-grid">
+      <button class="btn-action btn-reveal-main" id="btnReveal" onclick="toggleReveal()">
+        <i class="fas fa-check-double"></i>
+        <span id="revealText">Mostrar Respuesta Correcta</span>
+      </button>
+
+      <button class="btn-action btn-reset-main" onclick="resetVotes()">
+        <i class="fas fa-rotate-left"></i>
+        <span>Reiniciar Esta Pregunta</span>
+      </button>
+
+      <button class="btn-reset-all" onclick="resetAllSurvey()">
+        <i class="fas fa-trash-can"></i> Reiniciar Toda la Encuesta (8 Preguntas)
+      </button>
+    </div>
+  </div>
+
+  <!-- Resumen de Opciones y Votos en Vivo -->
+  <div class="card" id="adminSummaryCard">
+    <div style="font-weight: 800; font-size: 13.5px; margin-bottom: 10px; display:flex; justify-content:space-between;">
+      <span>Resultados de Opciones:</span>
+      <span style="font-size:11.5px; color:#10b981;" id="correctAnswerHint"></span>
+    </div>
+    <div class="options-summary" id="optionsSummaryList">
+      <!-- Renderizado por JS -->
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal Personalizado de Confirmación -->
+<div class="edu-modal-overlay" id="confirmModal" onclick="if(event.target===this) closeConfirmModal()">
+  <div class="edu-modal-box">
+    <div class="edu-modal-icon">
+      <i class="fas fa-triangle-exclamation"></i>
+    </div>
+    <h3 class="edu-modal-title" id="confirmModalTitle">Confirmar Acción</h3>
+    <p class="edu-modal-msg" id="confirmModalMsg">¿Estás seguro de continuar?</p>
+    <div class="edu-modal-actions">
+      <button class="edu-modal-btn edu-modal-cancel" onclick="closeConfirmModal()">Cancelar</button>
+      <button class="edu-modal-btn edu-modal-confirm" id="confirmModalActionBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-bar" id="toast">Acción completada</div>
+
+<script>
+// Banco idéntico de preguntas sincronizado
+const questions = [
+  {
+    id: "p1",
+    speaker: "INTEGRANTE 1 · SECCIÓN 01: CLIENTES & PRODUCTO",
+    title: "¿En qué etapa del Método E-D-A se deben retirar sellos y revisar niveles mínimos?",
+    correctAnswer: "A",
+    options: [
+      { id: "A", text: "Preparación y conceptos clave", votes: 0 },
+      { id: "B", text: "Operación paso a paso", votes: 0 },
+      { id: "C", text: "Mantenimiento y prevención", votes: 0 },
+      { id: "D", text: "Garantía posterior al reclamo", votes: 0 }
+    ]
+  },
+  {
+    id: "p2",
+    speaker: "INTEGRANTE 1 · SECCIÓN 01: CLIENTES & SERVICIO",
+    title: "Según la matriz de conducta, ¿cuál acción del cliente fortalece la experiencia del servicio?",
+    correctAnswer: "B",
+    options: [
+      { id: "A", text: "Llegar sin cita previa exigiendo prioridad", votes: 0 },
+      { id: "B", text: "Cumplir requisitos de entrada y respetar los turnos", votes: 0 },
+      { id: "C", text: "Ocultar si el equipo se cayó antes de llevarlo", votes: 0 },
+      { id: "D", text: "Exigir atención por canales personales no oficiales", votes: 0 }
+    ]
+  },
+  {
+    id: "p3",
+    speaker: "INTEGRANTE 2 · SECCIÓN 02: PERSONAL & PRODUCTO (C-V-B)",
+    title: "Al capacitar al personal en la Técnica C-V-B, ¿cuál de estos ejemplos representa el BENEFICIO?",
+    correctAnswer: "C",
+    options: [
+      { id: "A", text: "'Este equipo cuenta con una batería de 5,000 mAh'", votes: 0 },
+      { id: "B", text: "'Permite operar de forma continua por más de 12 horas'", votes: 0 },
+      { id: "C", text: "'Podrás trabajar todo el día en la calle sin buscar enchufe'", votes: 0 },
+      { id: "D", text: "'Viene en color gris espacial con garantía de 1 año'", votes: 0 }
+    ]
+  },
+  {
+    id: "p4",
+    speaker: "INTEGRANTE 2 · SECCIÓN 02: REGLA 3P DEL PERSONAL",
+    title: "Para confirmar la comprensión del cliente sin saturarlo, ¿cuál es la mejor pregunta de verificación?",
+    correctAnswer: "C",
+    options: [
+      { id: "A", text: "¿Le quedó todo claro, verdad?", votes: 0 },
+      { id: "B", text: "Cualquier duda léase el manual de la caja.", votes: 0 },
+      { id: "C", text: "¿En cuál de los 3 pasos siente que podríamos repasar juntos?", votes: 0 },
+      { id: "D", text: "Firme aquí de conformidad si ya sabe usarlo.", votes: 0 }
+    ]
+  },
+  {
+    id: "p5",
+    speaker: "INTEGRANTE 2 · SECCIÓN 02: CHECKLIST DEL SERVICIO",
+    title: "En el Checklist del Personal, ¿qué acción corresponde a la fase de 'Pre-servicio'?",
+    correctAnswer: "A",
+    options: [
+      { id: "A", text: "Organizar recursos, herramientas y verificar sistemas antes", votes: 0 },
+      { id: "B", text: "Pedir al cliente que firme la entrega final", votes: 0 },
+      { id: "C", text: "Saludar por su nombre y revisar sus requisitos de entrada", votes: 0 },
+      { id: "D", text: "Aplicar el procedimiento técnico sobre el equipo", votes: 0 }
+    ]
+  },
+  {
+    id: "p6",
+    speaker: "INTEGRANTE 3 · SECCIÓN 03: MARKETING & ESTRATEGIAS",
+    title: "Ofrecer un taller introductorio gratuito para captar y convertir nuevos prospectos es:",
+    correctAnswer: "B",
+    options: [
+      { id: "A", text: "Bono postventa bonificado", votes: 0 },
+      { id: "B", text: "Taller como Lead Magnet", votes: 0 },
+      { id: "C", text: "Recompensa por aprendizaje", votes: 0 },
+      { id: "D", text: "Fidelización y venta cruzada", votes: 0 }
+    ]
+  },
+  {
+    id: "p7",
+    speaker: "INTEGRANTE 3 · SECCIÓN 03: CANALES DE CAPACITACIÓN",
+    title: "Según el PDF, ¿cuál de los siguientes es un canal de capacitación ASINCRÓNICO?",
+    correctAnswer: "C",
+    options: [
+      { id: "A", text: "Webinar en vivo por Google Meet o Zoom", votes: 0 },
+      { id: "B", text: "Taller presencial en sala o piso de venta", votes: 0 },
+      { id: "C", text: "Cápsulas por mensajería y repositorio en aula virtual", votes: 0 },
+      { id: "D", text: "Llamada telefónica individual de consulta", votes: 0 }
+    ]
+  },
+  {
+    id: "p8",
+    speaker: "INTEGRANTE 3 · SECCIÓN 04: TABLA TARIFARIA & COSTOS",
+    title: "En la Tabla Tarifaria oficial, ¿cuál es el precio y condición del TALL-01 (Taller Estratégico)?",
+    correctAnswer: "A",
+    options: [
+      { id: "A", text: "$15 por persona · Condición: Bonificado", votes: 0 },
+      { id: "B", text: "$80 por hora · Mínimo 2 horas (CONS-02)", votes: 0 },
+      { id: "C", text: "$120 por hora · Mínimo 2 horas (FAC-03)", votes: 0 },
+      { id: "D", text: "$250 por reporte · Entrega en 5 días (REP-04)", votes: 0 }
+    ]
+  }
+];
+
+let currentIdx = 0;
+let revealState = {};
+let completedQuestions = {};
+let voterRegistry = {};
+
+const SUPABASE_URL = 'https://opteohbpsbrjnblexkqo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wdGVvaGJwc2Jyam5ibGV4a3FvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzM0NDEsImV4cCI6MjA4ODI0OTQ0MX0.tkUB4Wxul4IlS0eJTF9puWHNShIT9STMKaCwIkIIaws';
+const ADMIN_EMAIL = 'lopezosmin2021@gmail.com';
+let supabaseApp = null;
+let liveChannel = null;
+let isAdminAuthenticated = false;
+
+function updateGateUI() {
+  const gate = document.getElementById("adminAuthGate");
+  const main = document.getElementById("adminMainContent");
+  const btnLogout = document.getElementById("btnAdminLogout");
+
+  if (isAdminAuthenticated) {
+    if (gate) gate.classList.add("unlocked");
+    if (main) main.style.display = "flex";
+    if (btnLogout) btnLogout.style.display = "inline-flex";
+  } else {
+    if (gate) gate.classList.remove("unlocked");
+    if (main) main.style.display = "none";
+    if (btnLogout) btnLogout.style.display = "none";
+  }
+}
+
+async function checkGateSession() {
+  if (!supabaseApp) return;
+  try {
+    const { data } = await supabaseApp.auth.getSession();
+    const session = data?.session;
+    isAdminAuthenticated = !!(session && session.user && session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    updateGateUI();
+  } catch (e) {
+    isAdminAuthenticated = false;
+    updateGateUI();
+  }
+}
+
+async function submitGateLogin(e) {
+  e.preventDefault();
+  if (!supabaseApp) return;
+
+  const email = document.getElementById("gateEmail").value.trim();
+  const password = document.getElementById("gatePassword").value;
+  const errBox = document.getElementById("adminGateError");
+  const btn = document.getElementById("gateSubmitBtn");
+
+  errBox.style.display = "none";
+  if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    errBox.textContent = "Acceso denegado: este correo no tiene permisos de Expositor.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Verificando...";
+
+  try {
+    const { data, error } = await supabaseApp.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (data?.session?.user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      isAdminAuthenticated = true;
+      updateGateUI();
+      showToast("✓ Mando Expositor desbloqueado");
+    }
+  } catch (err) {
+    errBox.textContent = "Credenciales incorrectas. Verifica tu correo y contraseña.";
+    errBox.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Desbloquear";
+  }
+}
+
+async function logoutAdmin() {
+  if (supabaseApp) await supabaseApp.auth.signOut();
+  isAdminAuthenticated = false;
+  updateGateUI();
+  showToast("Sesión cerrada");
+}
+
+function initRealtimeSync() {
+  if (!window.supabase) return;
+  try {
+    supabaseApp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    checkGateSession();
+
+    supabaseApp.auth.onAuthStateChange((_event, session) => {
+      isAdminAuthenticated = !!(session && session.user && session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+      updateGateUI();
+    });
+
+    liveChannel = supabaseApp.channel('eduencuestas_live_room_v2', {
+      config: { broadcast: { self: false } }
+    });
+
+    liveChannel
+      .on('broadcast', { event: 'cast_vote' }, ({ payload }) => {
+        if (!payload || !payload.qId || !payload.voterId) return;
+        if (!voterRegistry[payload.qId]) voterRegistry[payload.qId] = {};
+
+        const q = questions.find(item => item.id === payload.qId);
+        if (!q) return;
+
+        const prevChoice = voterRegistry[payload.qId][payload.voterId];
+        if (prevChoice === payload.optId) return;
+
+        if (prevChoice) {
+          const oldOpt = q.options.find(o => o.id === prevChoice);
+          if (oldOpt && oldOpt.votes > 0) oldOpt.votes--;
+        }
+        const newOpt = q.options.find(o => o.id === payload.optId);
+        if (newOpt) newOpt.votes++;
+
+        voterRegistry[payload.qId][payload.voterId] = payload.optId;
+        saveData();
+        renderUI();
+      })
+      .on('broadcast', { event: 'admin_state' }, ({ payload }) => {
+        if (!payload) return;
+        if (typeof payload.currentIdx === 'number') currentIdx = payload.currentIdx;
+        if (payload.revealState) revealState = payload.revealState;
+        if (payload.completedQuestions) completedQuestions = payload.completedQuestions;
+        if (payload.voterRegistry) voterRegistry = payload.voterRegistry;
+        if (payload.questionsVotes) {
+          payload.questionsVotes.forEach((qVotes, idx) => {
+            if (questions[idx] && Array.isArray(qVotes)) {
+              qVotes.forEach((v, oIdx) => {
+                if (questions[idx].options[oIdx]) questions[idx].options[oIdx].votes = v || 0;
+              });
+            }
+          });
+        }
+        saveData();
+        renderUI();
+      })
+      .on('broadcast', { event: 'request_sync' }, () => {
+        broadcastAdminState({});
+      })
+      .subscribe();
+  } catch (err) {
+    console.warn("Realtime fallback local:", err);
+  }
+}
+
+function broadcastAdminState(extra = {}) {
+  if (!liveChannel) return;
+  try {
+    liveChannel.send({
+      type: 'broadcast',
+      event: 'admin_state',
+      payload: {
+        currentIdx,
+        revealState,
+        completedQuestions,
+        voterRegistry,
+        questionsVotes: questions.map(q => q.options.map(o => o.votes)),
+        ...extra
+      }
+    });
+  } catch(e) {}
+}
+
+function loadData() {
+  try {
+    const savedVotes = localStorage.getItem("eduencuestas_votes_v2");
+    if (savedVotes) {
+      const parsed = JSON.parse(savedVotes);
+      parsed.forEach((q, idx) => {
+        if (questions[idx]) {
+          q.options.forEach((opt, oIdx) => {
+            if (questions[idx].options[oIdx]) questions[idx].options[oIdx].votes = opt.votes || 0;
+          });
+        }
+      });
+    }
+    const reg = localStorage.getItem("eduencuestas_voter_registry");
+    if (reg) voterRegistry = JSON.parse(reg);
+    const rev = localStorage.getItem("eduencuestas_reveal_state");
+    if (rev) revealState = JSON.parse(rev);
+    const comp = localStorage.getItem("eduencuestas_completed_map");
+    if (comp) completedQuestions = JSON.parse(comp);
+    const active = localStorage.getItem("eduencuestas_active_index");
+    if (active !== null) currentIdx = parseInt(active, 10) || 0;
+  } catch(e) {}
+}
+
+function saveData() {
+  try {
+    localStorage.setItem("eduencuestas_votes_v2", JSON.stringify(questions));
+    localStorage.setItem("eduencuestas_voter_registry", JSON.stringify(voterRegistry));
+    localStorage.setItem("eduencuestas_reveal_state", JSON.stringify(revealState));
+    localStorage.setItem("eduencuestas_completed_map", JSON.stringify(completedQuestions));
+    localStorage.setItem("eduencuestas_active_index", currentIdx.toString());
+  } catch(e) {}
+}
+
+function renderUI() {
+  const q = questions[currentIdx];
+  const total = q.options.reduce((a, b) => a + b.votes, 0);
+  const isRevealed = !!revealState[q.id];
+
+  document.getElementById("speakerTag").textContent = q.speaker;
+  document.getElementById("qIndexLabel").textContent = `Pregunta ${currentIdx + 1} de ${questions.length}`;
+  document.getElementById("totalVotes").textContent = total;
+  document.getElementById("correctAnswerHint").textContent = `Respuesta correcta: Opción ${q.correctAnswer}`;
+
+  // Selector
+  const sel = document.getElementById("questionSelect");
+  sel.innerHTML = "";
+  questions.forEach((item, idx) => {
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.selected = (idx === currentIdx);
+    opt.textContent = `P${idx + 1}: ${item.title.substring(0, 48)}...`;
+    sel.appendChild(opt);
+  });
+
+  // Botón revelar
+  const btnRev = document.getElementById("btnReveal");
+  const txtRev = document.getElementById("revealText");
+  if (isRevealed) {
+    btnRev.classList.add("is-showing");
+    txtRev.textContent = "Ocultar Respuesta en Pantalla";
+  } else {
+    btnRev.classList.remove("is-showing");
+    txtRev.textContent = "Mostrar Respuesta Correcta";
+  }
+
+  // Lista de Opciones
+  const list = document.getElementById("optionsSummaryList");
+  list.innerHTML = "";
+
+  let maxVotes = -1;
+  let leaderOpt = null;
+
+  q.options.forEach(opt => {
+    if (opt.votes > maxVotes && opt.votes > 0) {
+      maxVotes = opt.votes;
+      leaderOpt = opt;
+    }
+    const pct = total === 0 ? 0 : Math.round((opt.votes / total) * 100);
+    const isCorrect = isRevealed && opt.id === q.correctAnswer;
+
+    const row = document.createElement("div");
+    row.className = `opt-summary-row ${isCorrect ? 'is-correct' : ''}`;
+    row.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <b style="width:24px; height:24px; border-radius:50%; background:rgba(14,165,233,0.15); display:inline-flex; align-items:center; justify-content:center; font-size:12px;">${opt.id}</b>
+        <span>${opt.text}</span>
+      </div>
+      <div style="font-weight:800; font-family:'Outfit', sans-serif;">
+        ${pct}% <span style="font-size:11px; font-weight:500; opacity:0.7;">(${opt.votes})</span>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+
+  const winLbl = document.getElementById("winnerInfo");
+  if (leaderOpt) {
+    winLbl.textContent = `Líder actual: Opción ${leaderOpt.id} con ${leaderOpt.votes} votos`;
+  } else {
+    winLbl.textContent = "Sin votos registrados todavía";
+  }
+}
+
+function changeQuestion(idx) {
+  const nextIdx = parseInt(idx, 10);
+  if (nextIdx === currentIdx) return;
+
+  const direction = nextIdx > currentIdx ? "next" : "prev";
+  const prevQ = questions[currentIdx];
+  const prevVotes = prevQ.options.reduce((a, b) => a + b.votes, 0);
+  if (prevVotes > 0 || revealState[prevQ.id]) {
+    completedQuestions[prevQ.id] = true;
+  }
+
+  currentIdx = nextIdx;
+  saveData();
+  broadcastAdminState();
+  renderUI();
+
+  const summaryCard = document.getElementById("adminSummaryCard");
+  if (summaryCard) {
+    summaryCard.classList.remove("card-slide-next", "card-slide-prev");
+    void summaryCard.offsetWidth;
+    summaryCard.classList.add(direction === "next" ? "card-slide-next" : "card-slide-prev");
+  }
+
+  showToast(`Cargada Pregunta ${currentIdx + 1} en proyector`);
+}
+
+function nextQuestion() {
+  if (currentIdx < questions.length - 1) {
+    changeQuestion(currentIdx + 1);
+  }
+}
+
+function prevQuestion() {
+  if (currentIdx > 0) {
+    changeQuestion(currentIdx - 1);
+  }
+}
+
+function toggleReveal() {
+  const q = questions[currentIdx];
+  revealState[q.id] = !revealState[q.id];
+  if (revealState[q.id]) {
+    completedQuestions[q.id] = true;
+  }
+  saveData();
+  broadcastAdminState();
+  renderUI();
+
+  if (revealState[q.id]) {
+    showToast(`✓ Opción ${q.correctAnswer} revelada en el proyector`);
+  } else {
+    showToast("Respuesta correcta oculta en proyector");
+  }
+}
+
+function openConfirmModal(title, msg, onConfirmCallback) {
+  document.getElementById("confirmModalTitle").textContent = title;
+  document.getElementById("confirmModalMsg").textContent = msg;
+  const btn = document.getElementById("confirmModalActionBtn");
+  btn.onclick = () => {
+    closeConfirmModal();
+    onConfirmCallback();
+  };
+  document.getElementById("confirmModal").classList.add("open");
+}
+
+function closeConfirmModal() {
+  document.getElementById("confirmModal").classList.remove("open");
+}
+
+function resetVotes() {
+  openConfirmModal(
+    "Reiniciar Esta Pregunta",
+    `¿Seguro que deseas reiniciar los votos de la Pregunta ${currentIdx + 1} a cero?`,
+    () => {
+      const q = questions[currentIdx];
+      q.options.forEach(o => o.votes = 0);
+      delete revealState[q.id];
+      delete completedQuestions[q.id];
+      delete voterRegistry[q.id];
+      saveData();
+      broadcastAdminState({ resetQuestionId: q.id });
+      renderUI();
+      showToast(`Pregunta ${currentIdx + 1} reiniciada a 0`);
+    }
+  );
+}
+
+function resetAllSurvey() {
+  openConfirmModal(
+    "Reiniciar Toda la Encuesta",
+    "¿Seguro que deseas reiniciar TODAS las 8 preguntas, borrar todos los votos y reiniciar el mapa de misiones?",
+    () => {
+      questions.forEach(q => {
+        q.options.forEach(o => o.votes = 0);
+      });
+      revealState = {};
+      completedQuestions = {};
+      voterRegistry = {};
+      currentIdx = 0;
+      localStorage.removeItem("eduencuestas_my_choice");
+      saveData();
+      broadcastAdminState({ resetAll: true });
+      renderUI();
+      showToast("✓ Toda la encuesta ha sido reiniciada por completo");
+    }
+  );
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const icon = document.getElementById("themeIcon");
+  if (html.classList.contains("dark")) {
+    html.classList.remove("dark");
+    icon.className = "fas fa-moon";
+    localStorage.setItem("eduencuestas_theme", "light");
+  } else {
+    html.classList.add("dark");
+    icon.className = "fas fa-sun";
+    localStorage.setItem("eduencuestas_theme", "dark");
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+// Sincronización en tiempo real desde la audiencia
+window.addEventListener("storage", (e) => {
+  if (e.key === "eduencuestas_votes_v2" || e.key === "eduencuestas_reveal_state" || e.key === "eduencuestas_active_index") {
+    loadData();
+    renderUI();
+  }
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const savedTheme = localStorage.getItem("eduencuestas_theme");
+  if (savedTheme === "dark") {
+    document.documentElement.classList.add("dark");
+    document.getElementById("themeIcon").className = "fas fa-sun";
+  }
+  loadData();
+  renderUI();
+  initRealtimeSync();
+});
+</script>
+
+</body>
+</html>
